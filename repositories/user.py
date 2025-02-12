@@ -37,3 +37,6 @@ class UserRepository:
     def validar_credenciales(self, user_rut: str, user_password: str) -> Optional[UserModel]:
         return self.db.query(UserModel).filter(and_(UserModel.user_rut == user_rut,
                                                     UserModel.user_password == user_password)).first()
+    
+    def get_by_nombre(self, user_name: str) -> Optional[UserModel] : 
+        return self.db.query(UserModel).filter(UserModel.user_name == user_name).first()

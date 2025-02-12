@@ -1,3 +1,4 @@
+from typing import List, Optional
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from app.repositories.user import UserRepository
@@ -6,6 +7,7 @@ from app.repositories.cargo import CargoRepository
 from app.repositories.registro import  RegistroRepository
 from app.schemas.user import UserCreate, UserResponse
 from datetime import datetime
+from app.models.user import UserModel
 
 class UserService:
     def __init__(self, db: Session):
@@ -40,6 +42,58 @@ class UserService:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Error al crear el usuario: {str(e)}"
             )
+    
+    def users_get_all(self) -> List[UserResponse]:
+        try:
+            usuarios = self.user_repo.get_all()
             
+            
+            # Convertir los objetos SQLAlchemy a modelos Pydantic
+            usuarios_response = [
+                UserResponse(
+                    id=usuario.id,
+                    user_name=usuario.user_name,
+                    user_lastname=usuario.user_lastname,
+                    user_rut=usuario.user_rut,
+                    user_email=usuario.user_email,  # Coma agregada aquí
+                    id_camara=usuario.id_camara,   # Asegúrate de que este campo exista
+                    id_cargo=usuario.id_cargo       # Asegúrate de que este campo exista
+                )
+                for usuario in usuarios
+            ]
+            
+            return usuarios_response
         
+        except HTTPException as http_exc:
+            # Re-lanzar la excepción HTTPException para que FastAPI la maneje
+            raise http_exc
+
+        except Exception as e:
+            # Manejar cualquier error inesperado
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Error al obtener los usuarios: {str(e)}"
+            )
+
+    def get_by_nombre(self, user_name: str) -> Optional[UserModel]:
+     try:
+        # Obtener el usuario desde el repositorio
+        usuario = self.user_repo.get_by_nombre(user_name)
         
+        # Verificar si el usuario existe
+        if usuario is None:
+            return None
+        
+        # Convertir el objeto SQLAlchemy a un modelo Pydantic
+        return UserModel(**usuario.to_dict())# Opción 1: Usar **usuario.__dict__
+        
+     except HTTPException as http_exc:
+        # Re-lanzar la excepción HTTPException para que FastAPI la maneje
+        raise http_exc    
+        
+     except Exception as e:
+        # Manejar cualquier error inesperado
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al obtener el usuario: {str(e)}"
+        )
